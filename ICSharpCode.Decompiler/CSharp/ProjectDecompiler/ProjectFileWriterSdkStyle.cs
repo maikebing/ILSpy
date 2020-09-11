@@ -186,7 +186,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 				var asembly = project.AssemblyResolver.Resolve(reference);
 				if (asembly != null && !project.AssemblyResolver.IsGacAssembly(reference))
 				{
-					xml.WriteElementString("HintPath", asembly.FileName);
+					xml.WriteElementString("HintPath", TryToRelativePath(asembly.FileName, project.TargetDirectory));
 				}
 
 				xml.WriteEndElement();
@@ -228,6 +228,20 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			}
 
 			return ProjectType.Default;
+		}
+
+		static string TryToRelativePath(string filePath, string directory)
+		{
+			filePath = Path.GetFullPath(filePath);
+			directory = Path.GetFullPath(directory);
+			if (!string.Equals(Path.GetPathRoot(filePath), Path.GetPathRoot(directory), StringComparison.OrdinalIgnoreCase))
+				return filePath;
+			if (!directory.EndsWith("\\"))
+				directory += "\\";
+			var directoryUri = new Uri(directory);
+			var fileUri = new Uri(filePath);
+			var relativeUri = directoryUri.MakeRelativeUri(fileUri);
+			return relativeUri.ToString().Replace("/", "\\");
 		}
 	}
 }
