@@ -185,11 +185,44 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			if (directories.Add(prop))
 				Directory.CreateDirectory(Path.Combine(TargetDirectory, prop));
 			string assemblyInfo = Path.Combine(prop, "AssemblyInfo.cs");
-			using (StreamWriter w = new StreamWriter(Path.Combine(TargetDirectory, assemblyInfo)))
+			using (StringWriter w = new StringWriter())
 			{
 				syntaxTree.AcceptVisitor(new CSharpOutputVisitor(w, Settings.CSharpFormattingOptions));
+				File.WriteAllText(Path.Combine(TargetDirectory, assemblyInfo), RemoveAssemblyInfoAttributes(w.ToString()));
 			}
 			return new[] { ("Compile", assemblyInfo) };
+		}
+
+		static string RemoveAssemblyInfoAttributes(string assemblyInfo)
+		{
+			var sb = new StringBuilder();
+			using (StringReader r = new StringReader(assemblyInfo))
+			{
+				string line;
+				while ((line = r.ReadLine()) != null)
+				{
+					if (line.StartsWith("[assembly: Debuggable", StringComparison.OrdinalIgnoreCase))
+						goto next;
+					// Strip DebuggableAttribute
+
+					switch (line)
+					{
+						case "[assembly: CompilationRelaxations(8)]":
+						case "[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]":
+						case "[assembly: SecurityPermission(8, SkipVerification = true)]":
+						case "[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]":
+						case "[module: UnverifiableCode]":
+							goto next;
+					}
+					// These are default attributes
+
+					sb.AppendLine(line);
+
+					next:
+					continue;
+				}
+			}
+			return sb.ToString();
 		}
 
 		IEnumerable<(string itemType, string fileName)> WriteCodeFilesInProject(Metadata.PEFile module, CancellationToken cancellationToken)
