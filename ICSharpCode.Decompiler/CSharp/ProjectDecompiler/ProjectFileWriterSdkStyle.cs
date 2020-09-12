@@ -82,7 +82,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			var projectType = GetProjectType(module);
 			xml.WriteAttributeString("Sdk", GetSdkString(projectType));
 
-			PlaceIntoTag("PropertyGroup", xml, () => WriteAssemblyInfo(xml, module, projectType));
+			PlaceIntoTag("PropertyGroup", xml, () => WriteAssemblyInfo(xml, module, project, projectType));
 			PlaceIntoTag("PropertyGroup", xml, () => WriteProjectInfo(xml, project));
 			PlaceIntoTag("ItemGroup", xml, () => WriteReferences(xml, module, project));
 
@@ -102,7 +102,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			}
 		}
 
-		static void WriteAssemblyInfo(XmlTextWriter xml, PEFile module, ProjectType projectType)
+		static void WriteAssemblyInfo(XmlTextWriter xml, PEFile module, IProjectInfoProvider project, ProjectType projectType)
 		{
 			xml.WriteElementString("AssemblyName", module.Name);
 
@@ -119,6 +119,8 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 
 			string platformName = TargetServices.GetPlatformName(module);
 			var targetFramework = TargetServices.DetectTargetFramework(module);
+			if (targetFramework.Identifier == ".NETFramework" && targetFramework.VersionNumber == 200)
+				targetFramework = TargetServices.DetectTargetFrameworkNET20(module, project.AssemblyResolver, targetFramework);
 
 			if (targetFramework.Moniker == null)
 			{
