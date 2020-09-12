@@ -209,7 +209,6 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 					{
 						case "[assembly: CompilationRelaxations(8)]":
 						case "[assembly: RuntimeCompatibility(WrapNonExceptionThrows = true)]":
-						case "[assembly: SecurityPermission(8, SkipVerification = true)]":
 						case "[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]":
 						case "[module: UnverifiableCode]":
 							goto next;
