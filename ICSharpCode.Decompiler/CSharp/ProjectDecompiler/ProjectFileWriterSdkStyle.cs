@@ -85,7 +85,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			PlaceIntoTag("PropertyGroup", xml, () => WriteAssemblyInfo(xml, module, project, projectType));
 			PlaceIntoTag("PropertyGroup", xml, () => WriteProjectInfo(xml, project));
 			PlaceIntoTag("ItemGroup", xml, () => WriteResources(xml, module, files, project));
-			PlaceIntoTag("ItemGroup", xml, () => WriteReferences(xml, module, project));
+			PlaceIntoTag("ItemGroup", xml, () => WriteReferences(xml, module, project, projectType));
 
 			xml.WriteEndElement();
 		}
@@ -217,11 +217,29 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			// include phase
 		}
 
-		static void WriteReferences(XmlTextWriter xml, PEFile module, IProjectInfoProvider project)
+		static void WriteReferences(XmlTextWriter xml, PEFile module, IProjectInfoProvider project, ProjectType projectType)
 		{
+			bool isNetCoreApp = TargetServices.DetectTargetFramework(module).Identifier == ".NETCoreApp";
+			var targetPacks = new HashSet<string>();
+			if (isNetCoreApp)
+			{
+				targetPacks.Add("Microsoft.NETCore.App");
+				switch (projectType)
+				{
+					case ProjectType.WinForms:
+					case ProjectType.Wpf:
+						targetPacks.Add("Microsoft.WindowsDesktop.App");
+						break;
+					case ProjectType.Web:
+						targetPacks.Add("Microsoft.AspNetCore.App");
+						targetPacks.Add("Microsoft.AspNetCore.All");
+						break;
+				}
+			}
+
 			foreach (var reference in module.AssemblyReferences.Where(r => !ImplicitReferences.Contains(r.Name)))
 			{
-				if (project.AssemblyResolver.IsSharedAssembly(reference))
+				if (isNetCoreApp && project.AssemblyResolver.IsSharedAssembly(reference, out string runtimePack) && targetPacks.Contains(runtimePack))
 				{
 					continue;
 				}
