@@ -110,11 +110,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			// Since we create AssemblyInfo.cs manually, we need to disable the auto-generation
 			xml.WriteElementString("GenerateAssemblyInfo", FalseString);
 
-			// 'Library' is default, so only need to specify output type for executables
-			if (!module.Reader.PEHeaders.IsDll)
-			{
-				WriteOutputType(xml, module.Reader.PEHeaders.PEHeader.Subsystem);
-			}
+			WriteOutputType(xml, module.Reader.PEHeaders.IsDll, module.Reader.PEHeaders.PEHeader.Subsystem, projectType);
 
 			WriteDesktopExtensions(xml, projectType);
 
@@ -142,16 +138,27 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			}
 		}
 
-		static void WriteOutputType(XmlTextWriter xml, Subsystem moduleSubsystem)
+		static void WriteOutputType(XmlTextWriter xml, bool isDll, Subsystem moduleSubsystem, ProjectType projectType)
 		{
-			switch (moduleSubsystem)
+			if (!isDll)
 			{
-				case Subsystem.WindowsGui:
-					xml.WriteElementString("OutputType", "WinExe");
-					break;
-				case Subsystem.WindowsCui:
-					xml.WriteElementString("OutputType", "Exe");
-					break;
+				switch (moduleSubsystem)
+				{
+					case Subsystem.WindowsGui:
+						xml.WriteElementString("OutputType", "WinExe");
+						break;
+					case Subsystem.WindowsCui:
+						xml.WriteElementString("OutputType", "Exe");
+						break;
+				}
+			}
+			else
+			{
+				// 'Library' is default, so only need to specify output type for executables (excludes ProjectType.Web)
+				if (projectType == ProjectType.Web)
+				{
+					xml.WriteElementString("OutputType", "Library");
+				}
 			}
 		}
 
