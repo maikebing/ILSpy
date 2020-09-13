@@ -380,7 +380,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			File.WriteAllBytes(Path.Combine(TargetDirectory, "app.ico"), appIcon);
 			yield return ("ApplicationIcon", "app.ico");
 
-			byte[] appManifest = CreateApplicationIcon(resources);
+			byte[] appManifest = CreateApplicationManifest(resources);
 			File.WriteAllBytes(Path.Combine(TargetDirectory, "app.manifest"), appIcon);
 			yield return ("ApplicationManifest", "app.manifest");
 
