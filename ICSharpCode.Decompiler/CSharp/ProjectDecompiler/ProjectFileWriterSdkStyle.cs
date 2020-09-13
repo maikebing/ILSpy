@@ -84,7 +84,7 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 
 			PlaceIntoTag("PropertyGroup", xml, () => WriteAssemblyInfo(xml, module, project, projectType));
 			PlaceIntoTag("PropertyGroup", xml, () => WriteProjectInfo(xml, project));
-			PlaceIntoTag("ItemGroup", xml, () => WriteResources(xml, module, files, project));
+			PlaceIntoTag("ItemGroup", xml, () => WriteResources(xml, files));
 			PlaceIntoTag("ItemGroup", xml, () => WriteReferences(xml, module, project, projectType));
 
 			xml.WriteEndElement();
@@ -186,11 +186,11 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 			}
 		}
 
-		static void WriteResources(XmlTextWriter xml, PEFile module, IEnumerable<(string itemType, string fileName)> files, IProjectInfoProvider project)
+		static void WriteResources(XmlTextWriter xml, IEnumerable<(string itemType, string fileName)> files)
 		{
-			foreach (var file in files.Where(t => t.itemType == "EmbeddedResource"))
+			foreach (var (itemType, fileName) in files.Where(t => t.itemType == "EmbeddedResource"))
 			{
-				string buildAction = Path.GetExtension(file.fileName).ToUpperInvariant() switch
+				string buildAction = Path.GetExtension(fileName).ToUpperInvariant() switch
 				{
 					".CS" => "Compile",
 					".RESX" => "EmbeddedResource",
@@ -200,18 +200,18 @@ namespace ICSharpCode.Decompiler.CSharp.ProjectDecompiler
 					continue;
 
 				xml.WriteStartElement(buildAction);
-				xml.WriteAttributeString("Remove", file.fileName);
+				xml.WriteAttributeString("Remove", fileName);
 				xml.WriteEndElement();
 			}
 			// remove phase
 
-			foreach (var file in files.Where(t => t.itemType == "EmbeddedResource"))
+			foreach (var (itemType, fileName) in files.Where(t => t.itemType == "EmbeddedResource"))
 			{
-				if (Path.GetExtension(file.fileName) == ".resx")
+				if (Path.GetExtension(fileName) == ".resx")
 					continue;
 
 				xml.WriteStartElement("EmbeddedResource");
-				xml.WriteAttributeString("Include", file.fileName);
+				xml.WriteAttributeString("Include", fileName);
 				xml.WriteEndElement();
 			}
 			// include phase
