@@ -51,15 +51,16 @@ namespace ICSharpCode.ILSpy.Metadata
 			dataGrid.RowDetailsTemplateSelector = new DllCharacteristicsDataTemplateSelector();
 			dataGrid.RowDetailsVisibilityMode = DataGridRowDetailsVisibilityMode.Visible;
 			dataGrid.AutoGenerateColumns = false;
-			dataGrid.Columns.Add(new DataGridCustomTextColumn { Header = "Member", Binding = new Binding("Member") { Mode = BindingMode.OneWay } });
-			dataGrid.Columns.Add(new DataGridCustomTextColumn { Header = "Offset", Binding = new Binding("Offset") { StringFormat = "X8", Mode = BindingMode.OneWay } });
-			dataGrid.Columns.Add(new DataGridCustomTextColumn { Header = "Size", Binding = new Binding("Size") { Mode = BindingMode.OneWay } });
-			dataGrid.Columns.Add(new DataGridCustomTextColumn { Header = "Value", Binding = new Binding(".") { Converter = ByteWidthConverter.Instance, Mode = BindingMode.OneWay } });
-			dataGrid.Columns.Add(new DataGridCustomTextColumn { Header = "Meaning", Binding = new Binding("Meaning") { Mode = BindingMode.OneWay } });
+			dataGrid.Columns.Add(new DataGridTextColumn { Header = "Member", Binding = new Binding("Member") { Mode = BindingMode.OneWay } });
+			dataGrid.Columns.Add(new DataGridTextColumn { Header = "Offset", Binding = new Binding("Offset") { StringFormat = "X8", Mode = BindingMode.OneWay } });
+			dataGrid.Columns.Add(new DataGridTextColumn { Header = "Size", Binding = new Binding("Size") { Mode = BindingMode.OneWay } });
+			dataGrid.Columns.Add(new DataGridTextColumn { Header = "Value", Binding = new Binding(".") { Converter = ByteWidthConverter.Instance, Mode = BindingMode.OneWay } });
+			dataGrid.Columns.Add(new DataGridTextColumn { Header = "Meaning", Binding = new Binding("Meaning") { Mode = BindingMode.OneWay } });
 
 			var headers = module.Reader.PEHeaders;
 			var reader = module.Reader.GetEntireImage().GetReader(headers.PEHeaderStartOffset, 128);
 			var header = headers.PEHeader;
+			var isPE32Plus = (header.Magic == PEMagic.PE32Plus);
 
 			var entries = new List<Entry>();
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Magic", header.Magic.ToString()));
@@ -70,8 +71,8 @@ namespace ICSharpCode.ILSpy.Metadata
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Uninitialized Data Size", "Size of the uninitialized data section, or the sum of all uninitialized data sections if there are multiple uninitialized data sections."));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Entry Point RVA", "RVA of entry point, needs to point to bytes 0xFF 0x25 followed by the RVA in a section marked execute / read for EXEs or 0 for DLLs"));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Base Of Code", "RVA of the code section."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Base Of Data", "RVA of the data section."));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Image Base", "Shall be a multiple of 0x10000."));
+			entries.Add(new Entry(isPE32Plus ? 0 : headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? 0UL : reader.ReadUInt32(), isPE32Plus ? 0 : 4, "Base Of Data", "PE32 only (not present in PE32Plus): RVA of the data section, relative to the Image Base."));
+			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Image Base", "Shall be a multiple of 0x10000."));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Section Alignment", "Shall be greater than File Alignment."));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "File Alignment", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Major OS Version", ""));
@@ -86,10 +87,10 @@ namespace ICSharpCode.ILSpy.Metadata
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "File Checksum", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "Subsystem", header.Subsystem.ToString()));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt16(), 2, "DLL Characteristics", header.DllCharacteristics.ToString()));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Stack Reserve Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Stack Commit Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Heap Reserve Size", ""));
-			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, header.Magic == PEMagic.PE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), header.Magic == PEMagic.PE32Plus ? 8 : 4, "Heap Commit Size", ""));
+			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Reserve Size", ""));
+			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Stack Commit Size", ""));
+			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Heap Reserve Size", ""));
+			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, isPE32Plus ? reader.ReadUInt64() : reader.ReadUInt32(), isPE32Plus ? 8 : 4, "Heap Commit Size", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadUInt32(), 4, "Loader Flags", ""));
 			entries.Add(new Entry(headers.PEHeaderStartOffset + reader.Offset, reader.ReadInt32(), 4, "Number of Data Directories", ""));
 
